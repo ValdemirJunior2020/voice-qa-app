@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: voice-qa-server
+    env: docker
+    rootDir: server
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_EXEC
+        value: python3
+      - key: GEMINI_API_KEY
+        sync: false  # set in dashboard if you want AI scoring
+
+  - type: static
+    name: voice-qa-client
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: build
+    envVars:
+      - key: REACT_APP_API
+        value: ""  # set to your server URL in Render after server is live
