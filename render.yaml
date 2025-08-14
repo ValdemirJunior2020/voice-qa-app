@@ -10,10 +10,11 @@ services:
       - key: PYTHON_EXEC
         value: python3
       - key: GEMINI_API_KEY
-        sync: false  # set in dashboard if you want AI scoring
+        sync: false
 
-  - type: static_site
+  - type: web
     name: voice-qa-client
+    env: static
     rootDir: client
     buildCommand: npm ci && npm run build
     staticPublishPath: build
