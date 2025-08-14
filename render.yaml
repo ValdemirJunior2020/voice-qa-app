@@ -5,12 +5,12 @@ services:
     rootDir: server
     plan: free
     autoDeploy: true
-    healthCheckPath: /
+    healthCheckPath: /healthz
     envVars:
       - key: PYTHON_EXEC
         value: python3
       - key: GEMINI_API_KEY
-        sync: false
+        sync: false  # set in Render dashboard if you want AI scoring
 
   - type: web
     name: voice-qa-client
@@ -20,4 +20,4 @@ services:
     staticPublishPath: build
     envVars:
       - key: REACT_APP_API
-        value: ""  # set this to your server URL in the Render dashboard after server is live
+        value: ""  # set to your server URL in Render after server is live

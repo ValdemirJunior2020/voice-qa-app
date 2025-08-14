@@ -1,6 +1,8 @@
-.app { max-width: 800px; margin: 2rem auto; font-family: system-ui, sans-serif; }
-.record-box { padding: 1rem; border: 1px solid #ddd; border-radius: 8px; background: #fff; }
-.controls { margin-top: .5rem; }
-button { padding: .5rem 1rem; border-radius: 8px; border: 1px solid #333; background: #fafafa; cursor: pointer; }
-.result pre { white-space: pre-wrap; background: #f7f7f7; padding: .75rem; border-radius: 6px; border: 1px solid #eee; }
+.app { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+.card { padding: 1rem; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.controls { margin-top: .5rem; display: flex; gap: .5rem; }
+button { padding: .6rem 1rem; border-radius: 10px; border: 1px solid #111827; background: #fafafa; cursor: pointer; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.result pre { white-space: pre-wrap; background: #f9fafb; padding: .75rem; border-radius: 8px; border: 1px solid #eee; }
 .error { color: #b00020; }
+.small { color: #6b7280; font-size: .9rem; }

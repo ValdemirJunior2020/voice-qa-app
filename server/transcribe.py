@@ -1,6 +1,11 @@
 import sys
-import warnings
-import whisper
+import unicodedata
+from faster_whisper import WhisperModel
+
+# --- Force UTF-8 stdout/stderr to avoid charmap errors on Windows/consoles
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 
 if len(sys.argv) < 2:
     print("Usage: python transcribe.py <audio_path>")
@@ -8,15 +13,12 @@ if len(sys.argv) < 2:
 
 audio_path = sys.argv[1]
 
-# Silence the noisy FP16-on-CPU warning
-warnings.filterwarnings("ignore", message="FP16 is not supported on CPU")
+# tiny/base are best for CPU. int8 is fast and accurate enough for QA.
+model = WhisperModel("tiny", compute_type="int8")
 
-try:
-    # For CPU, tiny/base are much faster; pick what you want: "tiny" | "base" | "small"
-    model = whisper.load_model("tiny")  # change to "base" if you prefer
-    # fp16=False to avoid FP16 behavior entirely on CPU
-    result = model.transcribe(audio_path, fp16=False)
-    print(result.get("text", "").strip())
-except Exception as e:
-    print(f"Error during transcription: {e}", file=sys.stderr)
-    sys.exit(1)
+# VAD improves quality by trimming silence/noise
+segments, info = model.transcribe(audio_path, vad_filter=True)
+
+text = "".join(seg.text for seg in segments).strip()
+text = unicodedata.normalize("NFKC", text)  # normalize exotic unicode just in case
+print(text)

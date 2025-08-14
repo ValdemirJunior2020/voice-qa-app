@@ -3,11 +3,12 @@ import "./App.css";
 
 const API = process.env.REACT_APP_API || "http://localhost:5000";
 
-export default function App() {
+function App() {
   const [recording, setRecording] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [err, setErr] = useState("");
+  const [mime, setMime] = useState("");
 
   const mediaRecorderRef = useRef(null);
   const mediaStreamRef = useRef(null);
@@ -15,7 +16,6 @@ export default function App() {
 
   useEffect(() => {
     return () => {
-      // cleanup on unmount
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         mediaRecorderRef.current.stop();
       }
@@ -25,26 +25,41 @@ export default function App() {
     };
   }, []);
 
+  function getSupportedMime() {
+    const candidates = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/ogg"
+    ];
+    for (const type of candidates) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported(type)) return type;
+    }
+    return "";
+  }
+
   async function startRecording() {
     try {
       setErr("");
       setResult(null);
-
-      // Request mic
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
 
-      const options = getSupportedMime();
-      const mr = new MediaRecorder(stream, options);
+      const mimeType = getSupportedMime();
+      setMime(mimeType || "(browser default)");
+
+      const mr = mimeType
+        ? new MediaRecorder(stream, { mimeType, bitsPerSecond: 128000 })
+        : new MediaRecorder(stream);
 
       chunksRef.current = [];
-      mr.ondataavailable = (e) => {
+      mr.ondataavailable = e => {
         if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
       };
       mr.onstop = handleStop;
 
       mediaRecorderRef.current = mr;
-      mr.start(); // start collecting data
+      mr.start();
       setRecording(true);
     } catch (e) {
       setErr(`Mic error: ${e.message}`);
@@ -62,42 +77,23 @@ export default function App() {
     }
   }
 
-  function getSupportedMime() {
-    // Prefer webm/opus (Chrome/Edge). Fallback to default.
-    const preferred = [
-      'audio/webm;codecs=opus',
-      'audio/webm',
-      'audio/ogg;codecs=opus',
-      'audio/ogg'
-    ];
-    for (const type of preferred) {
-      if (MediaRecorder.isTypeSupported(type)) return { mimeType: type, bitsPerSecond: 128000 };
-    }
-    return {}; // let the browser choose
-  }
-
   async function handleStop() {
     try {
       setLoading(true);
-      const blob = new Blob(chunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'audio/webm' });
+      const blob = new Blob(chunksRef.current, {
+        type: mediaRecorderRef.current?.mimeType || "audio/webm",
+      });
       chunksRef.current = [];
 
-      // Build form-data for server
       const form = new FormData();
-      // server expects field name "audio"
       form.append("audio", blob, "voice.webm");
 
-      const resp = await fetch(`${API}/upload`, {
-        method: "POST",
-        body: form,
-      });
-
+      const resp = await fetch(`${API}/upload`, { method: "POST", body: form });
       if (!resp.ok) {
         let e = {};
         try { e = await resp.json(); } catch {}
         throw new Error(e.error || `Upload failed (${resp.status})`);
       }
-
       const data = await resp.json();
       setResult(data);
     } catch (e) {
@@ -111,14 +107,11 @@ export default function App() {
     <div className="app">
       <h1>Voice QA App</h1>
 
-      <div className="record-box">
-        <p>{recording ? "Recording…" : "Press Start and speak, then Stop."}</p>
+      <div className="card">
+        <p className="small">Mime: {mime || "(not started)"}</p>
         <div className="controls">
-          {!recording ? (
-            <button onClick={startRecording}>Start</button>
-          ) : (
-            <button onClick={stopRecording}>Stop</button>
-          )}
+          <button onClick={startRecording} disabled={recording}>Start</button>
+          <button onClick={stopRecording} disabled={!recording}>Stop</button>
         </div>
       </div>
 
@@ -147,7 +140,7 @@ export default function App() {
 
           {result.meta?.stderrWarnings && (
             <details>
-              <summary>Whisper warnings</summary>
+              <summary>Transcriber warnings</summary>
               <pre>{result.meta.stderrWarnings}</pre>
             </details>
           )}
@@ -156,3 +149,5 @@ export default function App() {
     </div>
   );
 }
+
+export default App;
