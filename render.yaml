@@ -12,11 +12,11 @@ services:
       - key: GEMINI_API_KEY
         sync: false  # set in dashboard if you want AI scoring
 
-  - type: static
+  - type: static_site
     name: voice-qa-client
     rootDir: client
     buildCommand: npm ci && npm run build
     staticPublishPath: build
     envVars:
       - key: REACT_APP_API
-        value: ""  # set to your server URL in Render after server is live
+        value: ""  # set this to your server URL in the Render dashboard after server is live
